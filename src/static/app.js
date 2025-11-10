@@ -27,7 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="participants-section">
               <p><strong>Current Participants:</strong></p>
               <ul class="participants-list">
-                ${details.participants.map(email => `<li>${email}</li>`).join('')}
+                ${details.participants.map(email => `
+                  <li>
+                    <span class="participant-email">${email}</span>
+                    <button class="delete-participant" onclick="unregisterParticipant('${name}', '${email}')" title="Remove participant"></button>
+                  </li>
+                `).join('')}
               </ul>
             </div>
           `;
@@ -82,6 +87,9 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        
+        // Refresh the activities list to show the new participant
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -104,3 +112,53 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize app
   fetchActivities();
 });
+
+// Global function to unregister a participant
+async function unregisterParticipant(activityName, email) {
+  try {
+    const response = await fetch(
+      `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Show success message
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = result.message;
+      messageDiv.className = "message success";
+      messageDiv.classList.remove("hidden");
+
+      // Hide message after 3 seconds
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 3000);
+
+      // Refresh the activities list
+      fetchActivities();
+    } else {
+      // Show error message
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = result.detail || "Failed to unregister participant";
+      messageDiv.className = "message error";
+      messageDiv.classList.remove("hidden");
+
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 3000);
+    }
+  } catch (error) {
+    console.error("Error unregistering participant:", error);
+    const messageDiv = document.getElementById("message");
+    messageDiv.textContent = "Failed to unregister participant. Please try again.";
+    messageDiv.className = "message error";
+    messageDiv.classList.remove("hidden");
+
+    setTimeout(() => {
+      messageDiv.classList.add("hidden");
+    }, 3000);
+  }
+}
